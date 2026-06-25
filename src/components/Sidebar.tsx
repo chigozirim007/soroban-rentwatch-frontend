@@ -2,13 +2,14 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { FiBarChart2, FiList, FiDollarSign, FiFileText, FiSettings, FiClock } from "react-icons/fi";
 
 const navItems = [
-  { href: "/", label: "Dashboard", icon: "📊" },
-  { href: "/keys", label: "Monitored Keys", icon: "📋" },
-  { href: "/fund", label: "Fund Balance", icon: "💰" },
-  { href: "/logs", label: "Transaction Logs", icon: "📜" },
-  { href: "/settings", label: "Settings", icon: "⚙️" },
+  { href: "/", label: "Dashboard", icon: <FiBarChart2 /> },
+  { href: "/keys", label: "Monitored Keys", icon: <FiList /> },
+  { href: "/fund", label: "Fund Balance", icon: <FiDollarSign /> },
+  { href: "/logs", label: "Transaction Logs", icon: <FiFileText /> },
+  { href: "/settings", label: "Settings", icon: <FiSettings /> },
 ];
 
 export default function Sidebar() {
@@ -20,7 +21,7 @@ export default function Sidebar() {
       <div className="px-6 py-6 border-b border-white/[0.06]">
         <div className="flex items-center gap-3">
           <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-lg shadow-lg shadow-indigo-500/20">
-            ⏳
+            <FiClock />
           </div>
           <div>
             <h1 className="text-base font-bold text-white tracking-tight">RentWatch</h1>

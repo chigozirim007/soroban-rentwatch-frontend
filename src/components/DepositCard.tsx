@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { FiAlertTriangle } from "react-icons/fi";
 
 export default function DepositCard() {
   const [copied, setCopied] = useState<"address" | "memo" | null>(null);
@@ -68,8 +69,8 @@ export default function DepositCard() {
               {copied === "memo" ? "✓ Copied" : "Copy"}
             </button>
           </div>
-          <p className="text-[11px] text-amber-500/80 mt-1.5">
-            ⚠️ Deposits without this memo cannot be credited to your account
+          <p className="text-[11px] text-amber-500/80 mt-1.5 flex items-center gap-1">
+            <FiAlertTriangle className="w-3 h-3" /> Deposits without this memo cannot be credited to your account
           </p>
         </div>
 

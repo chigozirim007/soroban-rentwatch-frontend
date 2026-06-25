@@ -1,9 +1,9 @@
-"use client";
+import React from 'react';
 
 interface StatCardProps {
   label: string;
   value: number | string;
-  icon: string;
+  icon: React.ReactNode;
   color: "green" | "yellow" | "red" | "blue" | "purple";
   suffix?: string;
 }

@@ -1,4 +1,6 @@
 "use client";
+import React from 'react';
+import { FiCheckCircle, FiDollarSign, FiAlertTriangle, FiXCircle } from 'react-icons/fi';
 
 interface ActivityItem {
   id: string;
@@ -18,10 +20,10 @@ const demoActivity: ActivityItem[] = [
 ];
 
 const typeConfig = {
-  extension: { icon: "✅", color: "text-emerald-400", bg: "bg-emerald-500/10" },
-  deposit: { icon: "💰", color: "text-blue-400", bg: "bg-blue-500/10" },
-  warning: { icon: "⚠️", color: "text-amber-400", bg: "bg-amber-500/10" },
-  error: { icon: "❌", color: "text-red-400", bg: "bg-red-500/10" },
+  extension: { icon: <FiCheckCircle />, color: "text-emerald-400", bg: "bg-emerald-500/10" },
+  deposit: { icon: <FiDollarSign />, color: "text-blue-400", bg: "bg-blue-500/10" },
+  warning: { icon: <FiAlertTriangle />, color: "text-amber-400", bg: "bg-amber-500/10" },
+  error: { icon: <FiXCircle />, color: "text-red-400", bg: "bg-red-500/10" },
 };
 
 export default function ActivityFeed() {

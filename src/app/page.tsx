@@ -1,5 +1,6 @@
 import StatCard from "../components/StatCard";
 import ActivityFeed from "../components/ActivityFeed";
+import { FiCheckCircle, FiAlertTriangle, FiXCircle, FiDollarSign } from 'react-icons/fi';
 
 export default function DashboardPage() {
   return (
@@ -14,10 +15,10 @@ export default function DashboardPage() {
 
       {/* Stat Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 stagger-children">
-        <StatCard label="Healthy" value={12} icon="🟢" color="green" />
-        <StatCard label="Near Expiry" value={3} icon="⚠️" color="yellow" />
-        <StatCard label="Critical" value={1} icon="🔴" color="red" />
-        <StatCard label="XLM Balance" value="4.20" icon="💰" color="purple" suffix="XLM" />
+        <StatCard label="Healthy" value={12} icon={<FiCheckCircle />} color="green" />
+        <StatCard label="Near Expiry" value={3} icon={<FiAlertTriangle />} color="yellow" />
+        <StatCard label="Critical" value={1} icon={<FiXCircle />} color="red" />
+        <StatCard label="XLM Balance" value="4.20" icon={<FiDollarSign />} color="purple" suffix="XLM" />
       </div>
 
       {/* TTL Health Overview + Activity */}
