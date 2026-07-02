@@ -1,5 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import {
+  generateInstanceKeyXdr,
+  generatePersistentDataKeyXdr,
+  isValidContractId,
+} from "@/lib/soroban";
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
@@ -48,12 +53,26 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   const body = await request.json().catch(() => null);
-  const { publicKey, contractId, storageKind, targetKeyXdr, thresholdLedgers, extendToLedgers } =
+  const { publicKey, contractId, storageKind, targetKeyXdr, symbol, thresholdLedgers, extendToLedgers } =
     body ?? {};
 
   if (!publicKey || !contractId || !storageKind) {
     return NextResponse.json(
       { error: "publicKey, contractId, storageKind are required" },
+      { status: 400 }
+    );
+  }
+
+  if (!isValidContractId(contractId)) {
+    return NextResponse.json(
+      { error: "Invalid contract ID — must be a valid Soroban contract address (C...)" },
+      { status: 400 }
+    );
+  }
+
+  if (storageKind === "PERSISTENT" && !symbol && !targetKeyXdr) {
+    return NextResponse.json(
+      { error: "symbol is required for PERSISTENT storage kind" },
       { status: 400 }
     );
   }
@@ -67,12 +86,16 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "User not found — connect wallet first" }, { status: 404 });
   }
 
-  // Derive a default XDR key for INSTANCE / CONTRACT_CODE if none provided
-  const resolvedXdr =
-    targetKeyXdr ||
-    (storageKind === "INSTANCE"
-      ? Buffer.from(`instance:${contractId}`).toString("base64")
-      : Buffer.from(`code:${contractId}`).toString("base64"));
+  // Generate real Soroban XDR
+  let resolvedXdr: string;
+  if (targetKeyXdr) {
+    resolvedXdr = targetKeyXdr;
+  } else if (storageKind === "INSTANCE" || storageKind === "CONTRACT_CODE") {
+    resolvedXdr = generateInstanceKeyXdr(contractId);
+  } else {
+    // PERSISTENT — requires a symbol
+    resolvedXdr = generatePersistentDataKeyXdr(contractId, symbol);
+  }
 
   const key = await prisma.monitoredKey.create({
     data: {
@@ -108,7 +131,6 @@ export async function DELETE(request: NextRequest) {
     return NextResponse.json({ error: "id and publicKey are required" }, { status: 400 });
   }
 
-  // Verify ownership before deleting
   const key = await prisma.monitoredKey.findFirst({
     where: { id: keyId, user: { publicKey } },
     select: { id: true },
@@ -121,3 +143,4 @@ export async function DELETE(request: NextRequest) {
   await prisma.monitoredKey.delete({ where: { id: keyId } });
   return NextResponse.json({ success: true });
 }
+
