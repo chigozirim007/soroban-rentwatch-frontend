@@ -1,67 +1,111 @@
 "use client";
-import React from 'react';
-import { FiCheckCircle, FiDollarSign, FiAlertTriangle, FiXCircle } from 'react-icons/fi';
+import React, { useEffect, useState } from "react";
+import { FiCheckCircle, FiDollarSign, FiAlertTriangle, FiXCircle, FiLoader } from "react-icons/fi";
 
-interface ActivityItem {
+interface LogItem {
   id: string;
-  type: "extension" | "deposit" | "warning" | "error";
-  message: string;
-  timestamp: string;
-  txHash?: string;
+  contractId: string;
+  status: string;
+  xlmCost: string | null;
+  txHash: string;
+  errorMessage: string | null;
+  createdAt: string;
 }
 
-// Demo data — replace with real API data via SWR
-const demoActivity: ActivityItem[] = [
-  { id: "1", type: "extension", message: "Extended CABC...D1F2 — +100,000 ledgers", timestamp: "2 min ago", txHash: "abc123" },
-  { id: "2", type: "warning", message: "NEAR_EXPIRY: CDEF...A3B4 — ~2.1 days remaining", timestamp: "15 min ago" },
-  { id: "3", type: "deposit", message: "Deposit received: 5.0000000 XLM", timestamp: "1 hour ago", txHash: "def456" },
-  { id: "4", type: "extension", message: "Extended CGHI...E5F6 — +100,000 ledgers", timestamp: "3 hours ago", txHash: "ghi789" },
-  { id: "5", type: "error", message: "Extension failed for CJKL...G7H8 — insufficient balance", timestamp: "5 hours ago" },
-];
-
 const typeConfig = {
-  extension: { icon: <FiCheckCircle />, color: "text-emerald-400", bg: "bg-emerald-500/10" },
-  deposit: { icon: <FiDollarSign />, color: "text-blue-400", bg: "bg-blue-500/10" },
-  warning: { icon: <FiAlertTriangle />, color: "text-amber-400", bg: "bg-amber-500/10" },
-  error: { icon: <FiXCircle />, color: "text-red-400", bg: "bg-red-500/10" },
+  SUCCESS: { icon: <FiCheckCircle />, color: "text-emerald-400", bg: "bg-emerald-500/10", label: "Extended" },
+  FAILED: { icon: <FiXCircle />, color: "text-red-400", bg: "bg-red-500/10", label: "Failed" },
+  PENDING: { icon: <FiAlertTriangle />, color: "text-amber-400", bg: "bg-amber-500/10", label: "Pending" },
 };
 
-export default function ActivityFeed() {
+function timeAgo(iso: string): string {
+  const diff = Date.now() - new Date(iso).getTime();
+  const mins = Math.floor(diff / 60000);
+  if (mins < 1) return "just now";
+  if (mins < 60) return `${mins} min ago`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `${hrs} hour${hrs > 1 ? "s" : ""} ago`;
+  return `${Math.floor(hrs / 24)} day${Math.floor(hrs / 24) > 1 ? "s" : ""} ago`;
+}
+
+export default function ActivityFeed({ publicKey }: { publicKey?: string | null }) {
+  const [logs, setLogs] = useState<LogItem[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (!publicKey) return;
+
+    async function fetchLogs() {
+      setLoading(true);
+      try {
+        const res = await fetch(`/api/logs?publicKey=${publicKey}&limit=8`);
+        if (res.ok) {
+          const data = await res.json();
+          setLogs(data.logs ?? []);
+        }
+      } catch (err) {
+        console.error("Failed to load activity:", err);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    fetchLogs();
+  }, [publicKey]);
+
   return (
     <div className="rounded-2xl border border-white/[0.06] bg-white/[0.02] overflow-hidden">
       <div className="px-5 py-4 border-b border-white/[0.06]">
         <h3 className="text-sm font-semibold text-white">Recent Activity</h3>
       </div>
       <div className="divide-y divide-white/[0.04]">
-        {demoActivity.map((item) => {
-          const cfg = typeConfig[item.type];
-          return (
-            <div
-              key={item.id}
-              className="flex items-start gap-3 px-5 py-3.5 hover:bg-white/[0.02] transition-colors"
-            >
-              <div className={`w-8 h-8 rounded-lg ${cfg.bg} flex items-center justify-center text-sm flex-shrink-0 mt-0.5`}>
-                {cfg.icon}
-              </div>
-              <div className="min-w-0 flex-1">
-                <p className={`text-sm ${cfg.color}`}>{item.message}</p>
-                <div className="flex items-center gap-2 mt-1">
-                  <span className="text-[11px] text-slate-600">{item.timestamp}</span>
-                  {item.txHash && (
-                    <a
-                      href={`https://stellar.expert/explorer/testnet/tx/${item.txHash}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-[11px] text-indigo-500 hover:text-indigo-400 transition-colors"
-                    >
-                      View tx →
-                    </a>
-                  )}
+        {loading ? (
+          <div className="flex items-center justify-center gap-2 py-8 text-slate-500 text-sm">
+            <FiLoader className="animate-spin" /> Loading activity...
+          </div>
+        ) : logs.length === 0 ? (
+          <div className="flex items-center justify-center py-8 text-slate-500 text-sm">
+            {publicKey ? "No activity yet." : "Connect wallet to view activity."}
+          </div>
+        ) : (
+          logs.map((log) => {
+            const cfg = typeConfig[log.status as keyof typeof typeConfig] ?? typeConfig.PENDING;
+            const short = `${log.contractId.slice(0, 6)}...${log.contractId.slice(-4)}`;
+            const message =
+              log.status === "SUCCESS"
+                ? `Extended ${short} — ${log.xlmCost ? `${log.xlmCost} XLM` : ""}`
+                : log.status === "FAILED"
+                ? `Failed: ${short} — ${log.errorMessage ?? "unknown error"}`
+                : `Pending: ${short}`;
+
+            return (
+              <div
+                key={log.id}
+                className="flex items-start gap-3 px-5 py-3.5 hover:bg-white/[0.02] transition-colors"
+              >
+                <div className={`w-8 h-8 rounded-lg ${cfg.bg} flex items-center justify-center text-sm flex-shrink-0 mt-0.5 ${cfg.color}`}>
+                  {cfg.icon}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className={`text-sm ${cfg.color}`}>{message}</p>
+                  <div className="flex items-center gap-2 mt-1">
+                    <span className="text-[11px] text-slate-600">{timeAgo(log.createdAt)}</span>
+                    {log.txHash && (
+                      <a
+                        href={`https://stellar.expert/explorer/testnet/tx/${log.txHash}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-[11px] text-indigo-500 hover:text-indigo-400 transition-colors"
+                      >
+                        View tx →
+                      </a>
+                    )}
+                  </div>
                 </div>
               </div>
-            </div>
-          );
-        })}
+            );
+          })
+        )}
       </div>
     </div>
   );

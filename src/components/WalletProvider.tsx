@@ -6,6 +6,8 @@ import { createContext, useContext, useState, useEffect, useCallback, type React
 
 interface WalletState {
   address: string | null;
+  user: any | null; // Holds the real user from the Postgres DB
+  isAuthenticating: boolean;
   isConnected: boolean;
   isReady: boolean;
   connect: () => Promise<void>;
@@ -14,6 +16,8 @@ interface WalletState {
 
 const WalletContext = createContext<WalletState>({
   address: null,
+  user: null,
+  isAuthenticating: false,
   isConnected: false,
   isReady: false,
   connect: async () => {},
@@ -28,7 +32,38 @@ export function useWallet(): WalletState {
 
 export function WalletProvider({ children }: { children: ReactNode }) {
   const [address, setAddress] = useState<string | null>(null);
+  const [user, setUser] = useState<any | null>(null);
+  const [isAuthenticating, setIsAuthenticating] = useState(false);
   const [isReady, setIsReady] = useState(false);
+
+  // Authenticate user against our backend API
+  const authenticateUser = async (pubKey: string) => {
+    setIsAuthenticating(true);
+    try {
+      // Check if user exists
+      let res = await fetch(`/api/user?publicKey=${pubKey}`);
+      
+      // Auto-register if they don't exist
+      if (res.status === 404) {
+        res = await fetch("/api/user", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ publicKey: pubKey }),
+        });
+      }
+      
+      if (res.ok) {
+        const data = await res.json();
+        setUser(data.user);
+      } else {
+        console.error("Failed to authenticate user with backend");
+      }
+    } catch (err) {
+      console.error("Authentication error:", err);
+    } finally {
+      setIsAuthenticating(false);
+    }
+  };
 
   useEffect(() => {
     // Only run on client — avoid hydration mismatch
@@ -38,6 +73,8 @@ export function WalletProvider({ children }: { children: ReactNode }) {
     const stored = localStorage.getItem("rw_wallet_address");
     if (stored) {
       setAddress(stored);
+      // Background authenticate on page load
+      authenticateUser(stored);
     }
   }, []);
 
@@ -61,6 +98,9 @@ export function WalletProvider({ children }: { children: ReactNode }) {
       const pubKey = addressResult.address;
       setAddress(pubKey);
       localStorage.setItem("rw_wallet_address", pubKey);
+      
+      // Auto-register / fetch user after connecting wallet
+      await authenticateUser(pubKey);
     } catch (err) {
       console.error("Wallet connection failed:", err);
     }
@@ -68,6 +108,7 @@ export function WalletProvider({ children }: { children: ReactNode }) {
 
   const disconnect = useCallback(() => {
     setAddress(null);
+    setUser(null);
     localStorage.removeItem("rw_wallet_address");
   }, []);
 
@@ -75,6 +116,8 @@ export function WalletProvider({ children }: { children: ReactNode }) {
     <WalletContext.Provider
       value={{
         address,
+        user,
+        isAuthenticating,
         isConnected: !!address,
         isReady,
         connect,

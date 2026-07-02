@@ -3,9 +3,23 @@
 import { useWallet } from "./WalletProvider";
 
 export default function ConnectButton() {
-  const { address, isConnected, isReady, connect, disconnect } = useWallet();
+  const { address, isConnected, isReady, connect, disconnect, isAuthenticating } = useWallet();
 
   if (!isReady) return null;
+
+  if (isAuthenticating) {
+    return (
+      <button
+        disabled
+        className="group relative px-6 py-2.5 rounded-xl font-semibold text-sm overflow-hidden bg-white/5 border border-white/10 opacity-70 cursor-not-allowed"
+      >
+        <span className="relative text-white flex items-center gap-2">
+          <div className="w-4 h-4 border-2 border-white/20 border-t-white/80 rounded-full animate-spin" />
+          Authenticating...
+        </span>
+      </button>
+    );
+  }
 
   if (isConnected && address) {
     return (
