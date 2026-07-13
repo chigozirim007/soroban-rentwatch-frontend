@@ -90,12 +90,23 @@ export function WalletProvider({ children }: { children: ReactNode }) {
     // Only run on client — avoid hydration mismatch
     setIsReady(true);
 
-    // Check if previously connected
     const stored = localStorage.getItem("rw_wallet_address");
     if (stored) {
       setAddress(stored);
-      // Background authenticate on page load
-      authenticateUser(stored);
+      // Check if we already have a valid session before asking to sign again
+      fetch("/api/user")
+        .then(async (res) => {
+          if (res.ok) {
+            const data = await res.json();
+            setUser(data.user);
+          } else {
+            // No valid session, ask user to sign in
+            authenticateUser(stored);
+          }
+        })
+        .catch(() => {
+          authenticateUser(stored);
+        });
     }
   }, []);
 
