@@ -16,7 +16,7 @@ export default function SettingsPage() {
   useEffect(() => {
     if (!address) return;
     setLoading(true);
-    fetch(`/api/settings?publicKey=${address}`)
+    fetch(`/api/settings`)
       .then((r) => r.json())
       .then((d) => setWebhookUrl(d.webhookUrl ?? ""))
       .catch(console.error)
@@ -31,7 +31,7 @@ export default function SettingsPage() {
       const res = await fetch("/api/settings", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ publicKey: address, webhookUrl }),
+        body: JSON.stringify({ webhookUrl }),
       });
       if (!res.ok) throw new Error("Failed to save settings");
       setSaved(true);

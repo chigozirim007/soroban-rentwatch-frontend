@@ -40,17 +40,38 @@ export function WalletProvider({ children }: { children: ReactNode }) {
   const authenticateUser = async (pubKey: string) => {
     setIsAuthenticating(true);
     try {
-      // Check if user exists
-      let res = await fetch(`/api/user?publicKey=${pubKey}`);
+      // Use Freighter's signMessage to prove wallet ownership
+      const freighter = await import("@stellar/freighter-api");
+      const message = `Soroban RentWatch Auth: ${Date.now()}`;
       
-      // Auto-register if they don't exist
-      if (res.status === 404) {
-        res = await fetch("/api/user", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ publicKey: pubKey }),
-        });
+      const signResult = await freighter.signMessage(message);
+      if (signResult.error) {
+        console.error("Signature denied:", signResult.error);
+        setIsAuthenticating(false);
+        return;
       }
+
+      // signedMessage may be a Buffer or string depending on Freighter version
+      const signed = signResult.signedMessage;
+      const signatureBase64 = typeof signed === "string"
+        ? signed
+        : Buffer.from(signed as any).toString("base64");
+
+      // Login to backend to get JWT cookie
+      let authRes = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ publicKey: pubKey, message, signature: signatureBase64 }),
+      });
+
+      if (!authRes.ok) {
+        console.error("Failed to authenticate with backend");
+        setIsAuthenticating(false);
+        return;
+      }
+
+      // Fetch user using the newly set HTTP-only cookie
+      let res = await fetch(`/api/user`);
       
       if (res.ok) {
         const data = await res.json();
@@ -106,10 +127,12 @@ export function WalletProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  const disconnect = useCallback(() => {
+  const disconnect = useCallback(async () => {
     setAddress(null);
     setUser(null);
     localStorage.removeItem("rw_wallet_address");
+    // Clear cookie
+    await fetch("/api/auth/login", { method: "DELETE" });
   }, []);
 
   return (

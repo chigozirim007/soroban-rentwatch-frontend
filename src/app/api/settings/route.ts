@@ -1,16 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { getSession } from "@/lib/auth";
 
 export async function GET(request: NextRequest) {
-  const { searchParams } = new URL(request.url);
-  const publicKey = searchParams.get("publicKey");
-
-  if (!publicKey) {
-    return NextResponse.json({ error: "publicKey is required" }, { status: 400 });
+  const session = await getSession();
+  if (!session) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   const user = await prisma.user.findUnique({
-    where: { publicKey },
+    where: { publicKey: session.publicKey },
     select: { webhookUrl: true },
   });
 
@@ -22,15 +21,16 @@ export async function GET(request: NextRequest) {
 }
 
 export async function PATCH(request: NextRequest) {
-  const body = await request.json().catch(() => null);
-  const { publicKey, webhookUrl } = body ?? {};
-
-  if (!publicKey) {
-    return NextResponse.json({ error: "publicKey is required" }, { status: 400 });
+  const session = await getSession();
+  if (!session) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  const body = await request.json().catch(() => null);
+  const { webhookUrl } = body ?? {};
+
   const user = await prisma.user.findUnique({
-    where: { publicKey },
+    where: { publicKey: session.publicKey },
     select: { id: true },
   });
 
@@ -39,7 +39,7 @@ export async function PATCH(request: NextRequest) {
   }
 
   await prisma.user.update({
-    where: { publicKey },
+    where: { publicKey: session.publicKey },
     data: {
       webhookUrl: webhookUrl ?? null,
     },

@@ -20,7 +20,7 @@ export default function FundPage() {
   useEffect(() => {
     if (!address) return;
     setLoadingHistory(true);
-    fetch(`/api/balance?publicKey=${address}`)
+    fetch(`/api/balance`)
       .then((r) => r.json())
       .then((d) => setDeposits(d.deposits ?? []))
       .catch(console.error)

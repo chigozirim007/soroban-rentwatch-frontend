@@ -22,7 +22,7 @@ export default function DepositCard() {
   useEffect(() => {
     if (!address) return;
     setLoading(true);
-    fetch(`/api/balance?publicKey=${address}`)
+    fetch(`/api/balance`)
       .then((r) => r.json())
       .then((d) => setData(d))
       .catch(console.error)
@@ -44,14 +44,16 @@ export default function DepositCard() {
 
       // Build a simple payment transaction using Horizon
       const StellarSdk = await import("@stellar/stellar-sdk");
-      const server = new StellarSdk.Horizon.Server("https://horizon-testnet.stellar.org");
+      const horizonUrl = process.env.NEXT_PUBLIC_HORIZON_URL || "https://horizon-testnet.stellar.org";
+      const networkPassphrase = process.env.NEXT_PUBLIC_NETWORK_PASSPHRASE || StellarSdk.Networks.TESTNET;
+      const server = new StellarSdk.Horizon.Server(horizonUrl);
 
       const account = await server.loadAccount(address);
       const fee = await server.fetchBaseFee();
 
       const tx = new StellarSdk.TransactionBuilder(account, {
         fee: String(fee),
-        networkPassphrase: StellarSdk.Networks.TESTNET,
+        networkPassphrase,
       })
         .addOperation(
           StellarSdk.Operation.payment({
@@ -65,12 +67,12 @@ export default function DepositCard() {
         .build();
 
       const { signedTxXdr } = await freighter.signTransaction(tx.toXDR(), {
-        networkPassphrase: StellarSdk.Networks.TESTNET,
+        networkPassphrase,
       });
 
       const signedTx = StellarSdk.TransactionBuilder.fromXDR(
         signedTxXdr,
-        StellarSdk.Networks.TESTNET
+        networkPassphrase
       );
       const result = await server.submitTransaction(signedTx);
       setTxStatus(`✅ Deposit sent! Tx: ${(result as any).hash?.slice(0, 12)}...`);

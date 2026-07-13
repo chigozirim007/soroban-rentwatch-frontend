@@ -38,7 +38,7 @@ export default function ActivityFeed({ publicKey }: { publicKey?: string | null 
     async function fetchLogs() {
       setLoading(true);
       try {
-        const res = await fetch(`/api/logs?publicKey=${publicKey}&limit=8`);
+        const res = await fetch(`/api/logs?limit=8`);
         if (res.ok) {
           const data = await res.json();
           setLogs(data.logs ?? []);
@@ -92,7 +92,7 @@ export default function ActivityFeed({ publicKey }: { publicKey?: string | null 
                     <span className="text-[11px] text-slate-600">{timeAgo(log.createdAt)}</span>
                     {log.txHash && (
                       <a
-                        href={`https://stellar.expert/explorer/testnet/tx/${log.txHash}`}
+                        href={`${process.env.NEXT_PUBLIC_EXPLORER_URL || "https://stellar.expert/explorer/testnet"}/tx/${log.txHash}`}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="text-[11px] text-indigo-500 hover:text-indigo-400 transition-colors"

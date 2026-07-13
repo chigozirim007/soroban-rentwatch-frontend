@@ -33,8 +33,8 @@ export default function DashboardPage() {
       setLoading(true);
       try {
         const [balanceRes, keysRes] = await Promise.all([
-          fetch(`/api/balance?publicKey=${address}`),
-          fetch(`/api/keys?publicKey=${address}`),
+          fetch(`/api/balance`),
+          fetch(`/api/keys`),
         ]);
 
         const balanceData = balanceRes.ok ? await balanceRes.json() : null;

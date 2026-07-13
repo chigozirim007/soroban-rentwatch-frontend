@@ -5,17 +5,16 @@ import {
   generatePersistentDataKeyXdr,
   isValidContractId,
 } from "@/lib/soroban";
+import { getSession } from "@/lib/auth";
 
 export async function GET(request: NextRequest) {
-  const { searchParams } = new URL(request.url);
-  const publicKey = searchParams.get("publicKey");
-
-  if (!publicKey) {
-    return NextResponse.json({ error: "publicKey is required" }, { status: 400 });
+  const session = await getSession();
+  if (!session) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   const user = await prisma.user.findUnique({
-    where: { publicKey },
+    where: { publicKey: session.publicKey },
     select: { id: true },
   });
 
@@ -52,13 +51,18 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
+  const session = await getSession();
+  if (!session) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   const body = await request.json().catch(() => null);
-  const { publicKey, contractId, storageKind, targetKeyXdr, symbol, thresholdLedgers, extendToLedgers } =
+  const { contractId, storageKind, targetKeyXdr, symbol, thresholdLedgers, extendToLedgers } =
     body ?? {};
 
-  if (!publicKey || !contractId || !storageKind) {
+  if (!contractId || !storageKind) {
     return NextResponse.json(
-      { error: "publicKey, contractId, storageKind are required" },
+      { error: "contractId, storageKind are required" },
       { status: 400 }
     );
   }
@@ -78,7 +82,7 @@ export async function POST(request: NextRequest) {
   }
 
   const user = await prisma.user.findUnique({
-    where: { publicKey },
+    where: { publicKey: session.publicKey },
     select: { id: true },
   });
 
@@ -123,16 +127,20 @@ export async function POST(request: NextRequest) {
 }
 
 export async function DELETE(request: NextRequest) {
+  const session = await getSession();
+  if (!session) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   const { searchParams } = new URL(request.url);
   const keyId = searchParams.get("id");
-  const publicKey = searchParams.get("publicKey");
 
-  if (!keyId || !publicKey) {
-    return NextResponse.json({ error: "id and publicKey are required" }, { status: 400 });
+  if (!keyId) {
+    return NextResponse.json({ error: "id is required" }, { status: 400 });
   }
 
   const key = await prisma.monitoredKey.findFirst({
-    where: { id: keyId, user: { publicKey } },
+    where: { id: keyId, user: { publicKey: session.publicKey } },
     select: { id: true },
   });
 
@@ -143,4 +151,3 @@ export async function DELETE(request: NextRequest) {
   await prisma.monitoredKey.delete({ where: { id: keyId } });
   return NextResponse.json({ success: true });
 }
-

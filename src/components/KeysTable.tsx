@@ -40,7 +40,7 @@ export default function KeysTable({ refreshTrigger, statusFilter }: Props) {
     if (!address) return;
     setLoading(true);
     try {
-      const res = await fetch(`/api/keys?publicKey=${address}`);
+      const res = await fetch(`/api/keys`);
       const data = await res.json();
       setKeys(data.keys ?? []);
     } catch (err) {
@@ -58,7 +58,7 @@ export default function KeysTable({ refreshTrigger, statusFilter }: Props) {
     if (!address || !confirm("Remove this monitored key?")) return;
     setDeletingId(keyId);
     try {
-      await fetch(`/api/keys?id=${keyId}&publicKey=${address}`, { method: "DELETE" });
+      await fetch(`/api/keys?id=${keyId}`, { method: "DELETE" });
       setKeys((prev) => prev.filter((k) => k.id !== keyId));
     } catch (err) {
       console.error("Failed to delete key:", err);

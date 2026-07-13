@@ -1,18 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { decimalToString } from "@/lib/format";
-import { isValidPublicKey } from "@/lib/soroban";
+import { getSession } from "@/lib/auth";
 
 export async function GET(request: NextRequest) {
-  const { searchParams } = new URL(request.url);
-  const publicKey = searchParams.get("publicKey");
-
-  if (!publicKey || !isValidPublicKey(publicKey)) {
-    return NextResponse.json({ error: "A valid publicKey is required" }, { status: 400 });
+  const session = await getSession();
+  if (!session) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   const user = await prisma.user.findUnique({
-    where: { publicKey },
+    where: { publicKey: session.publicKey },
     include: {
       balancePool: true,
       deposits: { orderBy: { createdAt: "desc" }, take: 20 },
