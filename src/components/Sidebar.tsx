@@ -60,7 +60,7 @@ export default function Sidebar() {
       <div className="px-6 py-4 border-t border-white/[0.06]">
         <div className="flex items-center gap-2 text-[11px] text-slate-600">
           <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-          <span>Testnet Connected</span>
+          <span>{process.env.NEXT_PUBLIC_STELLAR_NETWORK === "PUBLIC" ? "Public Network" : "Testnet"} Connected</span>
         </div>
       </div>
     </aside>
