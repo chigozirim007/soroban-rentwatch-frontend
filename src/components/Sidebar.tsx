@@ -20,8 +20,8 @@ export default function Sidebar() {
       {/* Logo */}
       <div className="px-6 py-6 border-b border-white/[0.06]">
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-lg shadow-lg shadow-indigo-500/20">
-            <FiClock />
+          <div className="w-9 h-9 rounded-xl bg-white/5 flex items-center justify-center shadow-lg border border-white/10">
+            <img src="/favicon.ico" alt="RentWatch Logo" className="w-5 h-5 rounded-sm" />
           </div>
           <div>
             <h1 className="text-base font-bold text-white tracking-tight">RentWatch</h1>
